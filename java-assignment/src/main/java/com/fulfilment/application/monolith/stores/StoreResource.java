@@ -6,6 +6,9 @@ import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.transaction.TransactionSynchronizationRegistry;
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -28,6 +31,7 @@ import org.jboss.logging.Logger;
 public class StoreResource {
 
   @Inject LegacyStoreManagerGateway legacyStoreManagerGateway;
+  @Inject TransactionSynchronizationRegistry transactionSynchronizationRegistry;
 
   private static final Logger LOGGER = Logger.getLogger(StoreResource.class.getName());
 
@@ -54,8 +58,9 @@ public class StoreResource {
     }
 
     store.persist();
+    Store.flush();
 
-    legacyStoreManagerGateway.createStoreOnLegacySystem(store);
+    runAfterCommit(() -> legacyStoreManagerGateway.createStoreOnLegacySystem(store));
 
     return Response.ok(store).status(201).build();
   }
@@ -77,7 +82,9 @@ public class StoreResource {
     entity.name = updatedStore.name;
     entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
 
-    legacyStoreManagerGateway.updateStoreOnLegacySystem(updatedStore);
+    Store.flush();
+
+    runAfterCommit(() -> legacyStoreManagerGateway.updateStoreOnLegacySystem(entity));
 
     return entity;
   }
@@ -104,7 +111,9 @@ public class StoreResource {
       entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
     }
 
-    legacyStoreManagerGateway.updateStoreOnLegacySystem(updatedStore);
+    Store.flush();
+
+    runAfterCommit(() -> legacyStoreManagerGateway.updateStoreOnLegacySystem(entity));
 
     return entity;
   }
@@ -119,6 +128,27 @@ public class StoreResource {
     }
     entity.delete();
     return Response.status(204).build();
+  }
+
+  private void runAfterCommit(Runnable runnable) {
+    transactionSynchronizationRegistry.registerInterposedSynchronization(
+        new Synchronization() {
+          @Override
+          public void beforeCompletion() {
+            // no-op
+          }
+
+          @Override
+          public void afterCompletion(int status) {
+            if (status == Status.STATUS_COMMITTED) {
+              try {
+                runnable.run();
+              } catch (Exception e) {
+                LOGGER.error("Failed to propagate store change to legacy system after commit", e);
+              }
+            }
+          }
+        });
   }
 
   @Provider

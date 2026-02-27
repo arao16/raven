@@ -43,6 +43,12 @@
             <artifactId>quarkus-jdbc-postgresql</artifactId>
         </dependency>
 
+        <!-- Add H2 driver for dev (and also works for tests) -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-h2</artifactId>
+        </dependency>
+
         <!-- Testing: -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -55,12 +61,14 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Add this so tests can run without Docker/Postgres -->
+        <!-- (remove duplicate quarkus-jdbc-h2 test dependency; the one above already covers it) -->
+
         <dependency>
             <groupId>io.quarkiverse.openapi.generator</groupId>
             <artifactId>quarkus-openapi-generator-server</artifactId>
             <version>2.4.7</version>
         </dependency>
-
     </dependencies>
 
     <build>

@@ -1,10 +1,13 @@
 package com.fulfilment.application.monolith.location;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 import com.fulfilment.application.monolith.warehouses.domain.models.Location;
 import com.fulfilment.application.monolith.warehouses.domain.ports.LocationResolver;
 import java.util.ArrayList;
 import java.util.List;
 
+@ApplicationScoped
 public class LocationGateway implements LocationResolver {
 
   private static final List<Location> locations = new ArrayList<>();

@@ -8,7 +8,5 @@
 /dataSources.local.xml
 # Editor-based HTTP Client requests
 /httpRequests/
-/compiler.xml
-/encodings.xml
-/jarRepositories.xml
-/misc.xml
+.idea/
+*.xml
